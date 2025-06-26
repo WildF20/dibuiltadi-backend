@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Sales;
 use App\Models\Customer;
+use App\Models\SalesOrderItem;
 
 class SalesOrder extends Model
 {
@@ -20,5 +21,10 @@ class SalesOrder extends Model
     public function customer()
     {
         return $this->belongsTo(Customer::class, 'customer_id');
+    }
+
+    public function items()
+    {
+        return $this->hasMany(SalesOrderItem::class, 'order_id');
     }
 }
