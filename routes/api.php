@@ -11,6 +11,7 @@ Route::namespace('App\Http\Controllers\API')->group(function () {
         Route::apiResources([
             'rpt-trans-yearly' => 'YearlyTransactionController',
             'rpt-target-revenue' => 'TargetRevenueController',
+            'rpt-sales-achv' => 'SalesAchievementController',
         ]);
     });
     

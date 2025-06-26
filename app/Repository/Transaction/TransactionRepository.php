@@ -80,9 +80,8 @@ class TransactionRepository
                     })
                 ];
             })
-            ->groupBy('x') // Group by month
+            ->groupBy('x')
             ->map(function($monthItems) {
-                // Sum all values for each month
                 return [
                     'target' => $monthItems->sum('target'),
                     'revenue' => $monthItems->sum('revenue'),
@@ -90,7 +89,6 @@ class TransactionRepository
                 ];
             })
             ->pipe(function($monthlyTotals) {
-                // Transform to chart format
                 $allMonths = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
                               'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
                 
@@ -115,5 +113,86 @@ class TransactionRepository
         }
 
         return $order;
+    }
+
+    public function getSalesAchievement($filter)
+    {
+        try {
+            $order = SalesOrder::when($filter['period'] != '', function($query) use ($filter){
+                $query->whereYear("created_at", Carbon::parse($filter['period'])->year);
+                $query->whereMonth("created_at", Carbon::parse($filter['period'])->month);
+            })
+            ->with('items')
+            ->get()
+            ->map(function($item){
+                return [
+                    'sales' => $item->sales->user->name,
+                    'target' => $item->sales->latestTarget->amount,
+                    'revenue' => $item->items->sum(function($i){
+                        return $i->quantity * $i->selling_price;
+                    }),
+                ];
+            })
+            ->groupBy('sales')
+            ->map(function($group, $sales) {
+                $revenue = $group->sum('revenue');
+                $target = $group->first()['target'];
+                $percentage = $target > 0 ? ($revenue / $target) * 100 : 0;
+                
+                return [
+                    'sales' => $sales,
+                    'revenue' => [
+                        'amount' => number_format($revenue, 2, '.', ''),
+                        'abbreviation' => $this->formatNumberAbbreviation($revenue)
+                    ],
+                    'target' => [
+                        'amount' => number_format($target, 2, '.', ''),
+                        'abbreviation' => $this->formatNumberAbbreviation($target)
+                    ],
+                    'percentage' => $percentage
+                ];
+            })
+            ->values()
+            ->when($filter['isUnderperform'] != null, function($query) use ($filter){
+                return $query->when($filter['isUnderperform'] == 'true', function($q){
+                    return $q->filter(function($value){
+                        return $value['percentage'] < 100;
+                    });
+                }, function($q){
+                    return $q->filter(function($value){
+                        return $value['percentage'] >= 100;
+                    });
+                });
+            })
+            ->toArray();
+        } catch (\Throwable $th) {
+            throw $th;
+        }
+
+        return $order;
+    }
+
+    private function formatNumberAbbreviation($number)
+    {
+        $number = floatval($number);
+        
+        if ($number >= 1000000000) {
+            $formatted = $number / 1000000000;
+            $suffix = 'B';
+        } elseif ($number >= 1000000) {
+            $formatted = $number / 1000000;
+            $suffix = 'M';
+        } elseif ($number >= 1000) {
+            $formatted = $number / 1000;
+            $suffix = 'K';
+        } else {
+            return number_format($number, 2);
+        }
+        
+        if ($formatted == floor($formatted)) {
+            return number_format($formatted, 0) . $suffix;
+        } else {
+            return number_format($formatted, 2) . $suffix;
+        }
     }
 }
