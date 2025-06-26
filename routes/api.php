@@ -2,7 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 
-Route::group(['namespace' => 'App\Http\Controllers\API'], function () {
+Route::namespace('App\Http\Controllers\API')->group(function () {
     Route::prefix('auth')->group(function () {
         Route::post('/token', 'AuthController@generateToken');
     });
