@@ -10,7 +10,7 @@ Route::namespace('App\Http\Controllers\API')->group(function () {
     Route::namespace('Report')->group(function () {
         Route::apiResources([
             'rpt-trans-yearly' => 'YearlyTransactionController',
-            'rpt-trans-monthly' => 'MonthlyTransactionController',
+            'rpt-target-revenue' => 'TargetRevenueController',
         ]);
     });
     
