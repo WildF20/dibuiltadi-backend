@@ -1,0 +1,15 @@
+{
+  "registry-mirrors": [
+    "https://mirror.gcr.io",
+    "https://daocloud.io",
+    "https://c.163.com/",
+    "https://registry.docker-cn.com"
+  ],
+  "dns": ["8.8.8.8", "8.8.4.4", "1.1.1.1"],
+  "max-concurrent-downloads": 3,
+  "max-concurrent-uploads": 3,
+  "experimental": false,
+  "features": {
+    "buildkit": true
+  }
+} 
