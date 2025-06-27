@@ -98,6 +98,7 @@ return [
     'cipher' => 'AES-256-CBC',
 
     'key' => env('APP_KEY'),
+    'abstract_api_key' => env('ABSTRACT_PHONE_API_KEY'),
 
     'previous_keys' => [
         ...array_filter(
