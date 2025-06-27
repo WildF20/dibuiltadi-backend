@@ -1,5 +1,8 @@
 <?php
 
+use Tests\TestCase;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+
 /*
 |--------------------------------------------------------------------------
 | Test Case
@@ -11,9 +14,12 @@
 |
 */
 
-pest()->extend(Tests\TestCase::class)
- // ->use(Illuminate\Foundation\Testing\RefreshDatabase::class)
+pest()->extend(TestCase::class)
+    ->use(RefreshDatabase::class)
     ->in('Feature');
+
+pest()->extend(TestCase::class)
+    ->in('Unit');
 
 /*
 |--------------------------------------------------------------------------
@@ -30,6 +36,14 @@ expect()->extend('toBeOne', function () {
     return $this->toBe(1);
 });
 
+expect()->extend('toBeValidationError', function () {
+    return $this->toHaveKey('error');
+});
+
+expect()->extend('toHaveSuccessStructure', function () {
+    return $this->toHaveKeys(['message', 'data']);
+});
+
 /*
 |--------------------------------------------------------------------------
 | Functions
@@ -41,7 +55,23 @@ expect()->extend('toBeOne', function () {
 |
 */
 
-function something()
+function createMockRequest(array $data = [])
 {
-    // ..
+    $request = Mockery::mock(\Illuminate\Http\Request::class);
+    $request->shouldReceive('all')->andReturn($data);
+    $request->shouldReceive('only')->andReturn($data);
+    
+    foreach ($data as $key => $value) {
+        $request->shouldReceive('get')->with($key)->andReturn($value);
+        $request->{$key} = $value;
+    }
+    
+    return $request;
+}
+
+function createMockHttpClient($responses = [])
+{
+    $mock = new \GuzzleHttp\Handler\MockHandler($responses);
+    $handlerStack = \GuzzleHttp\HandlerStack::create($mock);
+    return new \GuzzleHttp\Client(['handler' => $handlerStack]);
 }
