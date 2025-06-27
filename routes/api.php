@@ -14,6 +14,18 @@ Route::namespace('App\Http\Controllers\API')->group(function () {
             'rpt-sales-achv' => 'SalesAchievementController',
         ]);
     });
+
+    Route::namespace('Master')->group(function () {
+        Route::apiResources([
+            'mst-customer' => 'CustomerController'
+        ]);
+    });
+
+    Route::namespace('Transaction')->group(function () {
+        Route::apiResources([
+            'trx-order' => 'OrderController',
+        ]);
+    });
     
     Route::middleware(['api.auth'])->group(function () {
         Route::post('/auth/revoke', 'AuthController@revokeTokens');
