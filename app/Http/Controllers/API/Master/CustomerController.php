@@ -61,7 +61,9 @@ class CustomerController extends Controller
 
         $customer = Customer::create($request->only('name', 'address', 'phone'));
         
-        return response()->json($customer, 201);
+        return response()->json([
+            'message' => 'Customer created successfully',
+        ], 201);
     }
 
     /**
