@@ -1,0 +1,151 @@
+version: '3.8'
+
+services:
+  # PHP Application Container
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: dibuiltadi_app
+    restart: unless-stopped
+    working_dir: /var/www/html
+    volumes:
+      - ./:/var/www/html
+      - ./docker/php/local.ini:/usr/local/etc/php/conf.d/local.ini
+    environment:
+      - APP_ENV=local
+      - APP_DEBUG=true
+    networks:
+      - dibuiltadi_network
+    depends_on:
+      - database
+      - redis
+
+  # Nginx Web Server
+  webserver:
+    image: nginx:alpine
+    container_name: dibuiltadi_webserver
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+      - "443:443"
+    volumes:
+      - ./:/var/www/html
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf
+    networks:
+      - dibuiltadi_network
+    depends_on:
+      - app
+
+  # MySQL Database
+  database:
+    image: mysql:8.0
+    container_name: dibuiltadi_database
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: dibuiltadi_db
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_USER: dibuiltadi_user
+      MYSQL_PASSWORD: dibuiltadi_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./docker/mysql/my.cnf:/etc/mysql/conf.d/my.cnf
+    networks:
+      - dibuiltadi_network
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: dibuiltadi_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - dibuiltadi_network
+
+  # Queue Worker
+  queue:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: dibuiltadi_queue
+    restart: unless-stopped
+    working_dir: /var/www/html
+    volumes:
+      - ./:/var/www/html
+    command: php artisan queue:work --verbose --tries=3 --timeout=90
+    environment:
+      - APP_ENV=local
+      - APP_DEBUG=true
+    networks:
+      - dibuiltadi_network
+    depends_on:
+      - database
+      - redis
+
+  # Scheduler (Cron Jobs)
+  scheduler:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: dibuiltadi_scheduler
+    restart: unless-stopped
+    working_dir: /var/www/html
+    volumes:
+      - ./:/var/www/html
+    command: php artisan schedule:work
+    environment:
+      - APP_ENV=local
+      - APP_DEBUG=true
+    networks:
+      - dibuiltadi_network
+    depends_on:
+      - database
+      - redis
+
+  # Node.js for Asset Compilation (Vite)
+  node:
+    image: node:18-alpine
+    container_name: dibuiltadi_node
+    working_dir: /var/www/html
+    volumes:
+      - ./:/var/www/html
+    command: sh -c "npm install && npm run dev"
+    ports:
+      - "5173:5173"
+    networks:
+      - dibuiltadi_network
+
+  # PhpMyAdmin (Optional - for database management)
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: dibuiltadi_phpmyadmin
+    restart: unless-stopped
+    ports:
+      - "8081:80"
+    environment:
+      PMA_HOST: database
+      PMA_PORT: 3306
+      PMA_USER: dibuiltadi_user
+      PMA_PASSWORD: dibuiltadi_password
+    networks:
+      - dibuiltadi_network
+    depends_on:
+      - database
+
+# Docker Networks
+networks:
+  dibuiltadi_network:
+    driver: bridge
+
+# Volumes
+volumes:
+  mysql_data:
+    driver: local
+  redis_data:
+    driver: local 
