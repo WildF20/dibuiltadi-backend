@@ -12,6 +12,8 @@ class SalesOrderItem extends Model
 
     protected $fillable = ['quantity', 'production_price', 'selling_price', 'product_id', 'order_id'];
 
+    public $timestamps = false;
+
     public function product()
     {
         return $this->belongsTo(Product::class, 'product_id');
